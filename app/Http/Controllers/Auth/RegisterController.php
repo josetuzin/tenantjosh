@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Auth;
 
 use App\User;
+use App\Tenant;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\Request;
 
 class RegisterController extends Controller
 {
@@ -28,7 +31,7 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/home';
+    protected $redirectTo = '/login';
 
     /**
      * Create a new controller instance.
@@ -50,10 +53,27 @@ class RegisterController extends Controller
     {
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'fqdn' => 'required|unique:system.hostnames'
         ]);
     }
+
+
+    public function register(Request $request)
+    {
+
+        // concatena la url base a la variable del request
+        $request->merge(['fqdn' => $request->fqdn . '.' . env('TENANT_URL_BASE')]);
+
+        $this->validator($request->all())->validate();
+        Tenant::create($request->input('fqdn'));
+        event(new Registered($user = $this->create($request->all())));
+        return $this->registered($request, $user)
+            ? : redirect('http://' . $request->input('fqdn') . $this->redirectTo);
+    }
+
+
 
     /**
      * Create a new user instance after a valid registration.
