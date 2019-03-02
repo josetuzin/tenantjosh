@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 
-Route::domain('tenantjosh.devel')->group(function () { 
+Route::domain('tenantjosh.test')->group(function () { 
   
     // Landing Page Routes
     Route::get('/', function () {
